@@ -24,7 +24,9 @@ void add_treasure(const char *hunt_id) {
     printf("Enter ID: ");
     scanf("%d", &t.id);
     printf("Enter username: ");
-    scanf("%s", t.username);
+    getchar();
+    fgets(t.username, MAX_USERNAME, stdin);
+    t.username[strcspn(t.username, "\n")] = '\0';
     printf("Enter latitude and longitude: ");
     scanf("%lf %lf", &t.latitude, &t.longitude);
     printf("Enter clue: ");

@@ -1,22 +1,40 @@
-# Name of the executable
-TARGET = treasure_manager
+# Executable names
+MANAGER = treasure_manager
+HUB = treasure_hub
+MONITOR = monitor
 
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -std=gnu99
 
 # Source files
-SRC = treasure_manager.c
+MANAGER_SRC = treasure_manager.c
+HUB_SRC = treasure_hub.c
+MONITOR_SRC = monitor.c
 
-# Build target
-all: $(TARGET)
+# Build all
+all: $(MANAGER) $(HUB) $(MONITOR)
 
-$(TARGET): $(SRC)
-	$(CC) $(CFLAGS) $(SRC) -o $(TARGET)
+# Build manager
+$(MANAGER): $(MANAGER_SRC)
+	$(CC) $(CFLAGS) -o $(MANAGER) $(MANAGER_SRC)
 
-run: all
-	./$(TARGET) $(ARGS)
+# Build hub
+$(HUB): $(HUB_SRC)
+	$(CC) $(CFLAGS) -o $(HUB) $(HUB_SRC) -lncurses
 
-# Clean up build artifacts
+# Build monitor
+$(MONITOR): $(MONITOR_SRC)
+	$(CC) $(CFLAGS) -o $(MONITOR) $(MONITOR_SRC)
+
+# Run the manager (example)
+run_manager: $(MANAGER)
+	./$(MANAGER) $(ARGS)
+
+# Run the hub (example)
+run_hub: $(HUB)
+	./$(HUB)
+
+# Clean all
 clean:
-	rm -f $(TARGET)
+	rm -f $(MANAGER) $(HUB) $(MONITOR)
