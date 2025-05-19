@@ -1,40 +1,33 @@
-# Executable names
-MANAGER = treasure_manager
-HUB = treasure_hub
-MONITOR = monitor
+# Makefile for Treasure Hunt Phase 3
+
+# Executables
+TARGET_HUB = treasure_hub
+TARGET_MONITOR = monitor
+TARGET_SCORE = score_calculator
 
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -std=gnu99
 
 # Source files
-MANAGER_SRC = treasure_manager.c
-HUB_SRC = treasure_hub.c
-MONITOR_SRC = monitor.c
+SRC_HUB = treasure_hub.c
+SRC_MONITOR = monitor.c
+SRC_SCORE = score_calculator.c
 
-# Build all
-all: $(MANAGER) $(HUB) $(MONITOR)
+# Default target
+all: $(TARGET_HUB) $(TARGET_MONITOR) $(TARGET_SCORE)
 
-# Build manager
-$(MANAGER): $(MANAGER_SRC)
-	$(CC) $(CFLAGS) -o $(MANAGER) $(MANAGER_SRC)
+$(TARGET_HUB): $(SRC_HUB)
+	$(CC) $(CFLAGS) $(SRC_HUB) -o $(TARGET_HUB) -lncurses
 
-# Build hub
-$(HUB): $(HUB_SRC)
-	$(CC) $(CFLAGS) -o $(HUB) $(HUB_SRC) -lncurses
+$(TARGET_MONITOR): $(SRC_MONITOR)
+	$(CC) $(CFLAGS) $(SRC_MONITOR) -o $(TARGET_MONITOR)
 
-# Build monitor
-$(MONITOR): $(MONITOR_SRC)
-	$(CC) $(CFLAGS) -o $(MONITOR) $(MONITOR_SRC)
+$(TARGET_SCORE): $(SRC_SCORE)
+	$(CC) $(CFLAGS) $(SRC_SCORE) -o $(TARGET_SCORE)
 
-# Run the manager (example)
-run_manager: $(MANAGER)
-	./$(MANAGER) $(ARGS)
+run: all
+	./$(TARGET_HUB)
 
-# Run the hub (example)
-run_hub: $(HUB)
-	./$(HUB)
-
-# Clean all
 clean:
-	rm -f $(MANAGER) $(HUB) $(MONITOR)
+	rm -f $(TARGET_HUB) $(TARGET_MONITOR) $(TARGET_SCORE)

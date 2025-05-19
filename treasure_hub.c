@@ -7,7 +7,8 @@
 #include <sys/wait.h>
 #include <ncurses.h>
 
-int pipefd[2];
+int pipe_to_monitor[2];
+int pipe_from_monitor[2];
 pid_t monitor_pid = -1;
 int monitor_running = 0;
 
@@ -17,8 +18,15 @@ void send_command_to_monitor(const char *cmd) {
         refresh();
         return;
     }
-    write(pipefd[1], cmd, strlen(cmd));
+    write(pipe_to_monitor[1], cmd, strlen(cmd));
     kill(monitor_pid, SIGUSR1);
+
+    // Wait for and display monitor response
+    char buffer[1024];
+    memset(buffer, 0, sizeof(buffer));
+    read(pipe_from_monitor[0], buffer, sizeof(buffer));
+    printw("%s", buffer);
+    refresh();
 }
 
 void sigchld_handler() {
@@ -36,10 +44,37 @@ void display_menu() {
     printw("1. Start Monitor\n");
     printw("2. List Hunts\n");
     printw("3. List Treasures (enter hunt name)\n");
-    printw("4. Stop Monitor\n");
-    printw("5. Exit\n");
+    printw("4. Calculate Scores\n");
+    printw("5. Stop Monitor\n");
+    printw("6. Exit\n");
     printw("Choose an option: ");
     refresh();
+}
+
+void run_score_calculator(const char *hunt) {
+    int fd[2];
+    if (pipe(fd) == -1) {
+        printw("[Error] Failed to create pipe for score calculator.\n");
+        return;
+    }
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        close(fd[0]);
+        dup2(fd[1], STDOUT_FILENO);
+        execl("./score_calculator", "score_calculator", hunt, NULL);
+        perror("execl");
+        exit(1);
+    } else {
+        close(fd[1]);
+        char buf[1024];
+        memset(buf, 0, sizeof(buf));
+        read(fd[0], buf, sizeof(buf));
+        printw("%s\n", buf);
+        refresh();
+        close(fd[0]);
+        waitpid(pid, NULL, 0);
+    }
 }
 
 int main() {
@@ -65,20 +100,23 @@ int main() {
                     printw("[Info] Monitor already running.\n");
                     break;
                 }
-                if (pipe(pipefd) == -1) {
+                if (pipe(pipe_to_monitor) == -1 || pipe(pipe_from_monitor) == -1) {
                     perror("pipe");
                     endwin();
                     exit(1);
                 }
                 monitor_pid = fork();
                 if (monitor_pid == 0) {
-                    close(pipefd[1]);
-                    dup2(pipefd[0], STDIN_FILENO);
+                    dup2(pipe_to_monitor[0], STDIN_FILENO);
+                    dup2(pipe_from_monitor[1], STDOUT_FILENO);
+                    close(pipe_to_monitor[1]);
+                    close(pipe_from_monitor[0]);
                     execl("./monitor", "monitor", NULL);
                     perror("execl");
                     exit(1);
                 } else {
-                    close(pipefd[0]);
+                    close(pipe_to_monitor[0]);
+                    close(pipe_from_monitor[1]);
                     monitor_running = 1;
                     printw("[Info] Monitor started with PID %d\n", monitor_pid);
                 }
@@ -99,7 +137,16 @@ int main() {
                 break;
             }
 
-            case '4':
+            case '4': {
+                printw("Enter hunt name: ");
+                refresh();
+                echo();
+                getnstr(input, sizeof(input));
+                run_score_calculator(input);
+                break;
+            }
+
+            case '5':
                 if (!monitor_running) {
                     printw("[Error] No monitor running.\n");
                 } else {
@@ -108,7 +155,7 @@ int main() {
                 }
                 break;
 
-            case '5':
+            case '6':
                 if (monitor_running) {
                     printw("[Error] Stop the monitor first.\n");
                 } else {
